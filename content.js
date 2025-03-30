@@ -1,3 +1,5 @@
+import { passwordChecker } from './features/password/passwordChecker.js';
+
 // State management
 let warningModal = null;
 let warningOverlay = null;
@@ -12,6 +14,8 @@ function initialize() {
     
     try {
         createWarningElements();
+        // Initialize password checker
+        passwordChecker.initialize();
         isInitialized = true;
         console.log('URL Guardian: Content script initialized');
     } catch (error) {

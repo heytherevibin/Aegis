@@ -1,17 +1,20 @@
 {
   "manifest_version": 3,
-  "name": "URL Guardian - Phishing Protection",
-  "version": "1.0",
-  "description": "Advanced URL analysis and phishing protection extension",
+  "name": "URL Guardian",
+  "version": "1.0.0",
+  "description": "A comprehensive web security extension with advanced protection features",
   "permissions": [
     "storage",
-    "tabs",
     "webNavigation",
-    "declarativeNetRequest",
-    "declarativeNetRequestWithHostAccess"
+    "webRequest",
+    "scripting",
+    "tabs",
+    "activeTab"
   ],
   "host_permissions": [
-    "<all_urls>"
+    "https://api.pwnedpasswords.com/*",
+    "https://*/*",
+    "http://*/*"
   ],
   "background": {
     "service_worker": "background.js",
@@ -30,15 +33,23 @@
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
-  "content_scripts": [{
-    "matches": ["<all_urls>"],
-    "js": ["content.js"],
-    "run_at": "document_start"
-  }],
-  "web_accessible_resources": [{
-    "resources": ["icons/*"],
-    "matches": ["<all_urls>"]
-  }],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": [
+        "features/password/passwordChecker.js",
+        "content.js"
+      ],
+      "css": [],
+      "run_at": "document_start"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["icons/*"],
+      "matches": ["<all_urls>"]
+    }
+  ],
   "externally_connectable": {
     "matches": ["<all_urls>"]
   },
