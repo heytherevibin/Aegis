@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>URL Guardian</title>
+  <style>
+    body {
+      width: 350px;
+      padding: 15px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      margin: 0;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #eee;
+    }
+    .header img {
+      width: 24px;
+      height: 24px;
+      margin-right: 10px;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 18px;
+      color: #333;
+      flex-grow: 1;
+      font-weight: 600;
+    }
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 24px;
+    }
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 24px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    input:checked + .slider {
+      background-color: #2196F3;
+    }
+    input:checked + .slider:before {
+      transform: translateX(26px);
+    }
+    .status {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .status h2 {
+      margin: 0 0 10px 0;
+      font-size: 14px;
+      color: #666;
+      font-weight: 600;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+    .stat-item {
+      text-align: center;
+      padding: 10px;
+      background: white;
+      border-radius: 6px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    .stat-value {
+      font-size: 24px;
+      font-weight: 600;
+      color: #2196F3;
+      margin-bottom: 4px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    .stat-label {
+      font-size: 12px;
+      color: #666;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    .history {
+      margin-top: 15px;
+    }
+    .history h2 {
+      margin: 0 0 10px 0;
+      font-size: 14px;
+      color: #666;
+      font-weight: 600;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #eee;
+    }
+    .history-list {
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .history-item {
+      padding: 8px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+    }
+    .history-url {
+      flex-grow: 1;
+      margin-right: 10px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    .history-status {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-weight: 500;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    .status-safe {
+      color: #00C851;
+    }
+    .status-unsafe {
+      color: #ff4444;
+    }
+    .history-time {
+      color: #666;
+      font-size: 11px;
+      margin-left: 8px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <img src="icons/icon48.png" alt="URL Guardian">
+    <h1>URL Guardian</h1>
+    <label class="switch">
+      <input type="checkbox" id="enableToggle">
+      <span class="slider"></span>
+    </label>
+  </div>
+
+  <div class="status">
+    <h2>Protection Status</h2>
+    <div class="stats">
+      <div class="stat-item">
+        <div class="stat-value" id="urls-checked">0</div>
+        <div class="stat-label">URLs Checked</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="threats-blocked">0</div>
+        <div class="stat-label">Threats Blocked</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="history">
+    <h2>Recent Activity</h2>
+    <div class="history-list" id="history-list">
+      <!-- History items will be populated by JavaScript -->
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html> 
