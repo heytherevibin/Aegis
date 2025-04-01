@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Aegis Icon Converter</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            margin: 10px 0;
+        }
+        .icon-row {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        button {
+            padding: 10px 15px;
+            background: #0B365B;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #1478B8;
+        }
+        .instructions {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <h1>Aegis Icon Converter</h1>
+    
+    <div class="instructions">
+        <h3>Instructions:</h3>
+        <ol>
+            <li>Click each "Download" button below to save the icons in the required sizes</li>
+            <li>Save the files to your extension's "icons" folder with these names:
+                <ul>
+                    <li>icon16.png (16x16 px)</li>
+                    <li>icon48.png (48x48 px)</li>
+                    <li>icon128.png (128x128 px)</li>
+                </ul>
+            </li>
+            <li>Reload your extension in Chrome to see the new icons</li>
+        </ol>
+    </div>
+    
+    <div class="container">
+        <div class="icon-row">
+            <div>
+                <h3>16x16 Icon</h3>
+                <canvas id="canvas16" width="16" height="16"></canvas><br>
+                <button onclick="downloadIcon(16)">Download 16x16 Icon</button>
+            </div>
+            
+            <div>
+                <h3>48x48 Icon</h3>
+                <canvas id="canvas48" width="48" height="48"></canvas><br>
+                <button onclick="downloadIcon(48)">Download 48x48 Icon</button>
+            </div>
+            
+            <div>
+                <h3>128x128 Icon</h3>
+                <canvas id="canvas128" width="128" height="128"></canvas><br>
+                <button onclick="downloadIcon(128)">Download 128x128 Icon</button>
+            </div>
+        </div>
+        
+        <div>
+            <h3>Original SVG (Preview)</h3>
+            <div id="svgContainer" style="width: 200px; height: 200px;"></div>
+        </div>
+    </div>
+
+    <script>
+        // SVG data
+        const svgData = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Shield outline -->
+  <path d="M256 32 L50 120 L50 240 C50 352 136 444 256 480 C376 444 462 352 462 240 L462 120 Z" 
+        fill="#0B365B" />
+  
+  <!-- Inner shield -->
+  <path d="M256 72 L90 144 L90 240 C90 332 158 408 256 440 C354 408 422 332 422 240 L422 144 Z" 
+        fill="#1478B8" />
+  
+  <!-- Dark shield center -->
+  <path d="M256 112 L130 168 L130 240 C130 312 182 371 256 400 C330 371 382 312 382 240 L382 168 Z" 
+        fill="#0B365B" />
+  
+  <!-- Letter A -->
+  <path d="M256 160 L160 320 L200 320 L220 280 L292 280 L312 320 L352 320 Z M256 200 L230 260 L282 260 Z" 
+        fill="#FFFFFF" />
+  
+  <!-- Shield points on sides -->
+  <path d="M50 180 L20 210 L50 240 Z" fill="#0B365B" />
+  <path d="M462 180 L492 210 L462 240 Z" fill="#0B365B" />
+</svg>`;
+
+        // Display SVG preview
+        document.getElementById('svgContainer').innerHTML = svgData;
+
+        // Function to render SVG to canvas
+        function renderSVGToCanvas(size) {
+            const canvas = document.getElementById(`canvas${size}`);
+            const ctx = canvas.getContext('2d');
+            
+            // Create a temporary Image element
+            const img = new Image();
+            
+            // Convert SVG to data URL
+            const svgBlob = new Blob([svgData], {type: 'image/svg+xml'});
+            const url = URL.createObjectURL(svgBlob);
+            
+            // When image loads, draw it on the canvas
+            img.onload = function() {
+                ctx.clearRect(0, 0, size, size);
+                ctx.drawImage(img, 0, 0, size, size);
+                URL.revokeObjectURL(url);
+            };
+            
+            img.src = url;
+        }
+        
+        // Download canvas as PNG
+        function downloadIcon(size) {
+            const canvas = document.getElementById(`canvas${size}`);
+            const link = document.createElement('a');
+            link.download = `icon${size}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+        
+        // Render icons when page loads
+        window.onload = function() {
+            renderSVGToCanvas(16);
+            renderSVGToCanvas(48);
+            renderSVGToCanvas(128);
+        };
+    </script>
+</body>
+</html> 

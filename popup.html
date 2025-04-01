@@ -1,194 +1,700 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>URL Guardian</title>
-  <style>
-    body {
-      width: 350px;
-      padding: 15px;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      margin: 0;
-    }
-    .header {
-      display: flex;
-      align-items: center;
-      margin-bottom: 15px;
-      padding-bottom: 10px;
-      border-bottom: 1px solid #eee;
-    }
-    .header img {
-      width: 24px;
-      height: 24px;
-      margin-right: 10px;
-    }
-    .header h1 {
-      margin: 0;
-      font-size: 18px;
-      color: #333;
-      flex-grow: 1;
-      font-weight: 600;
-    }
-    .switch {
-      position: relative;
-      display: inline-block;
-      width: 50px;
-      height: 24px;
-    }
-    .switch input {
-      opacity: 0;
-      width: 0;
-      height: 0;
-    }
-    .slider {
-      position: absolute;
-      cursor: pointer;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-color: #ccc;
-      transition: .4s;
-      border-radius: 24px;
-    }
-    .slider:before {
-      position: absolute;
-      content: "";
-      height: 16px;
-      width: 16px;
-      left: 4px;
-      bottom: 4px;
-      background-color: white;
-      transition: .4s;
-      border-radius: 50%;
-    }
-    input:checked + .slider {
-      background-color: #2196F3;
-    }
-    input:checked + .slider:before {
-      transform: translateX(26px);
-    }
-    .status {
-      background: #f8f9fa;
-      padding: 15px;
-      border-radius: 8px;
-      margin-bottom: 15px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-    .status h2 {
-      margin: 0 0 10px 0;
-      font-size: 14px;
-      color: #666;
-      font-weight: 600;
-    }
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 10px;
-    }
-    .stat-item {
-      text-align: center;
-      padding: 10px;
-      background: white;
-      border-radius: 6px;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-    }
-    .stat-value {
-      font-size: 24px;
-      font-weight: 600;
-      color: #2196F3;
-      margin-bottom: 4px;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    }
-    .stat-label {
-      font-size: 12px;
-      color: #666;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    }
-    .history {
-      margin-top: 15px;
-    }
-    .history h2 {
-      margin: 0 0 10px 0;
-      font-size: 14px;
-      color: #666;
-      font-weight: 600;
-      padding-bottom: 8px;
-      border-bottom: 1px solid #eee;
-    }
-    .history-list {
-      max-height: 200px;
-      overflow-y: auto;
-    }
-    .history-item {
-      padding: 8px;
-      border-bottom: 1px solid #eee;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      font-size: 12px;
-    }
-    .history-url {
-      flex-grow: 1;
-      margin-right: 10px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    }
-    .history-status {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      padding: 2px 6px;
-      border-radius: 3px;
-      font-weight: 500;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    }
-    .status-safe {
-      color: #00C851;
-    }
-    .status-unsafe {
-      color: #ff4444;
-    }
-    .history-time {
-      color: #666;
-      font-size: 11px;
-      margin-left: 8px;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aegis</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        :root[data-theme="light"] {
+            --primary: #6366F1;
+            --primary-hover: #4F46E5;
+            --danger: #EF4444;
+            --danger-hover: #DC2626;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --text-primary: #1E293B;
+            --text-secondary: #64748B;
+            --bg-primary: #FFFFFF;
+            --bg-secondary: #F8FAFC;
+            --border: #E2E8F0;
+            --disabled: #94A3B8;
+            --card-bg: rgba(255, 255, 255, 1);
+            --shadow-color: rgba(0, 0, 0, 0.05);
+            --blur-bg: rgba(255, 255, 255, 1);
+            --ring-color: rgba(99, 102, 241, 0.2);
+            --bg-hover: #F1F5F9;
+        }
+
+        :root[data-theme="dark"] {
+            --primary: #818CF8;
+            --primary-hover: #6366F1;
+            --danger: #FB7185;
+            --danger-hover: #F43F5E;
+            --success: #34D399;
+            --warning: #FBBF24;
+            --text-primary: #F8FAFC;
+            --text-secondary: #CBD5E1;
+            --bg-primary: #1E293B;
+            --bg-secondary: #0F172A;
+            --border: #334155;
+            --disabled: #64748B;
+            --card-bg: rgba(31, 41, 55, 1);
+            --shadow-color: rgba(0, 0, 0, 0.2);
+            --blur-bg: rgba(17, 24, 39, 1);
+            --ring-color: rgba(99, 102, 241, 0.2);
+            --bg-hover: #334155;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        body {
+            width: 360px;
+            height: 220px; /* Default height for main view */
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            box-shadow: 0 2px 4px var(--shadow-color);
+            border-radius: 12px;
+            overflow: hidden;
+            color: var(--text-primary);
+            transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                        color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                        height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body.settings-open {
+            height: 360px; /* Height for settings view */
+        }
+
+        .header {
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--bg-primary);
+            border-bottom: 1px solid var(--border);
+            gap: 16px;
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logo {
+            width: 24px;
+            height: 24px;
+        }
+
+        .title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .icon-button {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .icon-button:hover {
+            background: var(--bg-hover);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        /* Toggle switch in header */
+        .header .toggle-switch {
+            margin-right: 4px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            transition: .2s;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 2px;
+            bottom: 2px;
+            background-color: var(--text-secondary);
+            border-radius: 50%;
+            transition: .2s;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(20px);
+            background-color: white;
+        }
+
+        /* Specific icon sizes */
+        #settingsButton .material-icons {
+            font-size: 20px;
+        }
+
+        #themeToggle .material-icons {
+            font-size: 18px;
+        }
+
+        #closeSettings .material-icons {
+            font-size: 16px;
+        }
+
+        /* Close button styles */
+        .close-tab {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .close-tab:hover {
+            background: var(--bg-hover);
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+
+        .close-tab .material-icons {
+            font-size: 16px;
+            line-height: 1;
+        }
+
+        .content {
+            padding: 0;
+            background: var(--bg-primary);
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            padding: 12px;
+            background: var(--bg-primary);
+        }
+
+        .stat-card {
+            background: var(--bg-primary);
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 1px 2px var(--shadow-color);
+        }
+
+        .stat-card:last-child {
+            grid-column: span 2;
+            margin-top: 0;
+        }
+
+        .stat-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        /* Threats Blocked icon */
+        .stat-card:nth-child(1) .stat-icon {
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+        }
+
+        /* Allowed icon */
+        .stat-card:nth-child(2) .stat-icon {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+        }
+
+        /* URLs Checked icon */
+        .stat-card:nth-child(3) .stat-icon {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+        }
+
+        .stat-icon img {
+            width: 24px;
+            height: 24px;
+            object-fit: contain;
+            opacity: 0.9;
+        }
+
+        .stat-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--text-primary);
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .tab-container {
+            position: fixed;
+            top: 0;
+            right: -100%;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-primary);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateX(100%);
+            z-index: 1000;
+            border-left: 1px solid var(--border);
+            will-change: transform;
+            box-shadow: -4px 0 16px var(--shadow-color);
+        }
+
+        .tab-container.active {
+            transform: translateX(0);
+            right: 0;
+        }
+
+        .tab-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px;
+            background: var(--bg-primary);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .tab-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .close-tab {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.15s ease;
+        }
+
+        .close-tab:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+
+        .tab-content {
+            padding: 16px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-primary);
+        }
+
+        .settings-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .setting {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .setting span {
+            color: var(--text-primary);
+            font-size: 15px;
+            font-weight: 500;
+        }
+
+        /* Toggle Switch Styles */
+        .toggle-switch {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 52px;
+            height: 36px;
+            margin: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            width: 44px;
+            height: 26px;
+            left: 4px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 13px;
+            transition: all 0.2s ease;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 1px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--text-secondary);
+            border-radius: 11px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 1px 2px var(--shadow-color);
+        }
+
+        input:checked + .toggle-slider {
+            background: var(--primary);
+            border-color: var(--primary-hover);
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translate(20px, -50%);
+            background: white;
+        }
+
+        input:disabled + .toggle-slider {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Settings specific toggle adjustments */
+        .setting .toggle-switch {
+            height: 36px;
+            width: 52px;
+        }
+
+        .setting .toggle-switch .toggle-slider {
+            width: 44px;
+            height: 26px;
+            border-radius: 13px;
+        }
+
+        .setting .toggle-switch .toggle-slider:before {
+            width: 22px;
+            height: 22px;
+            border-radius: 11px;
+        }
+
+        .setting .toggle-switch input:checked + .toggle-slider:before {
+            transform: translate(20px, -50%);
+        }
+
+        /* Remove all other toggle variations */
+        .toggle-switch.minimal,
+        .toggle-switch.ios,
+        .toggle-switch.neon,
+        .toggle-switch.soft,
+        .toggle-switch.floating,
+        .toggle-switch.pill {
+            display: inline-flex !important;
+        }
+
+        /* Controls specific adjustments */
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding-right: 8px;
+        }
+
+        .icon-button, .toggle-switch {
+            height: 36px;
+        }
+
+        /* Add this at the end of the style section */
+        .stats.disabled .stat-card {
+            opacity: 0.5;
+            filter: grayscale(0.8);
+            pointer-events: none;
+            background: var(--bg-secondary) !important;
+            transition: all 0.3s ease;
+        }
+
+        .stats.disabled .stat-value {
+            color: var(--disabled);
+        }
+
+        .stats.disabled .stat-label {
+            color: var(--text-secondary);
+            opacity: 0.7;
+        }
+
+        .stats .stat-card {
+            transition: all 0.3s ease;
+        }
+
+        /* Add these icon-specific styles in the style section */
+        .icon-button .material-icons {
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Ensure icons are centered */
+        .icon-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .icon-button .material-icons {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            line-height: 1;
+            width: auto;
+            height: auto;
+        }
+
+        /* Update theme variables to ensure consistent backgrounds */
+        :root[data-theme="light"] {
+            --bg-primary: #FFFFFF;
+            --bg-secondary: #F8FAFC;
+            --border: #E2E8F0;
+        }
+
+        :root[data-theme="dark"] {
+            --bg-primary: #1E293B;
+            --bg-secondary: #0F172A;
+            --border: #334155;
+        }
+
+        /* Ensure smooth transitions for both themes */
+        body {
+            transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                        color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .tab-container,
+        .tab-header,
+        .tab-content,
+        .settings-group,
+        .setting {
+            transition: background-color 0.2s ease,
+                      border-color 0.2s ease;
+        }
+
+        /* Remove any transition delays */
+        .tab-container * {
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+
+        /* Update grid layout for 3 cards */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        .stat-card:last-child {
+            grid-column: span 2;
+        }
+
+        /* Add hover effect */
+        .stat-card:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px var(--shadow-color);
+            border-color: var(--primary);
+        }
+
+        /* Update specific stat card styles */
+        .stat-card:nth-child(1) .stat-icon {
+            color: var(--primary);
+            background: rgba(99, 102, 241, 0.1);
+            border-color: rgba(99, 102, 241, 0.2);
+        }
+
+        .stat-card:nth-child(2) .stat-icon {
+            color: var(--success);
+            background: rgba(16, 185, 129, 0.1);
+            border-color: rgba(16, 185, 129, 0.2);
+        }
+
+        .stat-card:nth-child(3) .stat-icon {
+            color: var(--warning);
+            background: rgba(245, 158, 11, 0.1);
+            border-color: rgba(245, 158, 11, 0.2);
+        }
+    </style>
 </head>
-<body>
-  <div class="header">
-    <img src="icons/icon48.png" alt="URL Guardian">
-    <h1>URL Guardian</h1>
-    <label class="switch">
-      <input type="checkbox" id="enableToggle">
-      <span class="slider"></span>
-    </label>
-  </div>
-
-  <div class="status">
-    <h2>Protection Status</h2>
-    <div class="stats">
-      <div class="stat-item">
-        <div class="stat-value" id="urls-checked">0</div>
-        <div class="stat-label">URLs Checked</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-value" id="threats-blocked">0</div>
-        <div class="stat-label">Threats Blocked</div>
-      </div>
+<body data-theme="light">
+    <div class="header">
+        <div class="header-title">
+            <img src="icons/icon48.png" alt="Aegis" class="logo">
+            <h1 class="title">Aegis</h1>
+        </div>
+        <div class="controls">
+            <label class="toggle-switch">
+                <input type="checkbox" id="enableToggle">
+                <span class="toggle-slider"></span>
+            </label>
+            <button id="settingsButton" class="icon-button" aria-label="Settings">
+                <span class="material-icons">settings</span>
+            </button>
+            <button id="themeToggle" class="icon-button" aria-label="Toggle theme">
+                <span class="material-icons">dark_mode</span>
+            </button>
+        </div>
     </div>
-  </div>
 
-  <div class="history">
-    <h2>Recent Activity</h2>
-    <div class="history-list" id="history-list">
-      <!-- History items will be populated by JavaScript -->
+    <div class="content">
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L4 6V12C4 17.55 7.84 22.73 12 23.5C16.16 22.73 20 17.55 20 12V6L12 2Z" fill="currentColor" opacity="0.9"/>
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <div class="stat-value" id="threatsBlocked">0</div>
+                    <div class="stat-label">Threats Blocked</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M9 16.17L4.83 12L3.41 13.41L9 19L21 7L19.59 5.59L9 16.17Z" fill="currentColor" opacity="0.9"/>
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <div class="stat-value" id="urlsAllowed">0</div>
+                    <div class="stat-label">Allowed</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M15.5 14H14.71L14.43 13.73C15.41 12.59 16 11.11 16 9.5C16 5.91 13.09 3 9.5 3C5.91 3 3 5.91 3 9.5C3 13.09 5.91 16 9.5 16C11.99 16 14 14.71 14.71 14.43L15 14.71V15.5L19 20.49L20.49 19L15.5 14ZM9.5 14C7.01 14 5 11.99 5 9.5C5 7.01 7.01 5 9.5 5C11.99 5 14 7.01 14 9.5C14 11.99 11.99 14 9.5 14Z" fill="currentColor" opacity="0.9"/>
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <div class="stat-value" id="urlsChecked">0</div>
+                    <div class="stat-label">URLs Checked</div>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
 
-  <script src="popup.js"></script>
+    <div id="settingsTab" class="tab-container">
+        <div class="tab-header">
+            <div class="tab-title">Settings</div>
+            <button id="closeSettings" class="close-tab">
+                <span class="material-icons">✕</span>
+            </button>
+        </div>
+        <div class="tab-content">
+            <div class="settings-group">
+                <div class="setting">
+                    <span>Show Warnings</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="warningsToggle">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="setting">
+                    <span>Block High Risk</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="blockToggle">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="setting">
+                    <span>Safe Browsing</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="enableSafeBrowsing">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="setting">
+                    <span>Keep History</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="keepHistory">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="popup.js"></script>
 </body>
 </html> 

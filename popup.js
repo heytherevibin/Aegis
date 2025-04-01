@@ -1,9 +1,21 @@
+/**
+ * Aegis Security Extension - Popup Script
+ * 
+ * This script handles user interactions in the extension popup,
+ * including settings management, theme switching, and stats display.
+ * 
+ * @author Vibin Mathew
+ * @copyright 2025
+ * @license MIT
+ */
+
 // Default settings
 const defaultSettings = {
-  enableProtection: true,
+  enabled: true,
   showWarnings: true,
   blockHighRisk: true,
-  enableSafeBrowsing: true,
+  theme: 'system',
+  safeBrowsing: true,
   keepHistory: true
 };
 
@@ -13,402 +25,281 @@ let stats = {
   urlsChecked: 0
 };
 
-// Load settings from storage
-async function loadSettings() {
-  try {
-    const settings = await chrome.storage.sync.get(defaultSettings);
-    
-    // Set all checkboxes
-    document.getElementById('enableToggle').checked = settings.enableProtection;
-    document.getElementById('showWarnings').checked = settings.showWarnings;
-    document.getElementById('blockHighRisk').checked = settings.blockHighRisk;
-    document.getElementById('enableSafeBrowsing').checked = settings.enableSafeBrowsing;
-    document.getElementById('keepHistory').checked = settings.keepHistory;
-    
-    // Update status and icon
-    updateStatus(settings.enableProtection);
-    await updateExtensionIcon(settings.enableProtection);
+// Initialize popup
+document.addEventListener('DOMContentLoaded', async () => {
+  const enableToggle = document.getElementById('enableToggle');
+  const warningsToggle = document.getElementById('warningsToggle');
+  const blockToggle = document.getElementById('blockToggle');
+  const safeBrowsingToggle = document.getElementById('enableSafeBrowsing');
+  const keepHistoryToggle = document.getElementById('keepHistory');
+  const statsContainer = document.querySelector('.stats');
+  const settingsButton = document.getElementById('settingsButton');
+  const settingsTab = document.getElementById('settingsTab');
+  const closeSettings = document.getElementById('closeSettings');
+  const body = document.body;
+  const defaultHeight = 220;
 
-    // Load stats
-    const statsData = await chrome.storage.local.get(['stats']);
-    if (statsData.stats) {
-      stats = statsData.stats;
-      updateStats();
+  // Initialize settings
+  const { settings = defaultSettings } = await chrome.storage.local.get('settings');
+  
+  // Initialize all toggles
+  enableToggle.checked = settings.enabled;
+  warningsToggle.checked = settings.showWarnings;
+  blockToggle.checked = settings.blockHighRisk;
+  safeBrowsingToggle.checked = settings.safeBrowsing;
+  keepHistoryToggle.checked = settings.keepHistory;
+
+  // Initialize stats visibility
+  updateStatsVisibility(settings.enabled);
+
+  // Initialize theme
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const theme = settings.theme === 'system' ? (prefersDark ? 'dark' : 'light') : settings.theme;
+  setTheme(theme);
+
+  /**
+   * Update stats container visibility based on extension enabled state
+   * @param {boolean} enabled - Whether the extension is enabled
+   */
+  function updateStatsVisibility(enabled) {
+    if (enabled) {
+      statsContainer.classList.remove('disabled');
+    } else {
+      statsContainer.classList.add('disabled');
     }
-
-    // Load history
-    await loadHistory();
-  } catch (error) {
-    handleError('Error loading settings. Please reload the extension.');
   }
-}
 
-// Save settings to storage
-async function saveSettings() {
-  try {
-    const settings = {
-      enableProtection: document.getElementById('enableToggle').checked,
-      showWarnings: document.getElementById('showWarnings').checked,
-      blockHighRisk: document.getElementById('blockHighRisk').checked,
-      enableSafeBrowsing: document.getElementById('enableSafeBrowsing').checked,
-      keepHistory: document.getElementById('keepHistory').checked
-    };
-    
-    await chrome.storage.sync.set(settings);
-    await chrome.storage.local.set({ protectionEnabled: settings.enableProtection });
-    
-    // Update status and icon
-    updateStatus(settings.enableProtection);
-    await updateExtensionIcon(settings.enableProtection);
-    
-    // Notify background script
-    await sendMessageWithRetry({
-      type: 'SETTINGS_UPDATED',
-      settings: settings
-    });
-  } catch (error) {
-    handleError('Error saving settings. Please try again.');
-  }
-}
-
-// Update status display
-function updateStatus(enabled) {
-  try {
-    // Update main status
-    const mainStatusValue = document.querySelector('.stat-value');
-    if (mainStatusValue) {
-      mainStatusValue.textContent = enabled ? 'Active' : 'Disabled';
-      mainStatusValue.style.color = enabled ? '#4CAF50' : '#f44336';
-    }
-
-    // Update settings state
-    const settingsInputs = document.querySelectorAll('.settings .toggle input[type="checkbox"]');
-    settingsInputs.forEach(input => {
-      if (input.id !== 'enableToggle') {
-        input.disabled = !enabled;
+  /**
+   * Update stats display with latest values from background script
+   */
+  function updateStats() {
+    chrome.runtime.sendMessage({type: 'GET_STATS'}, (response) => {
+      if (response) {
+        // Update the threatsBlocked counter
+        const threatsBlockedElement = document.getElementById('threatsBlocked');
+        if (threatsBlockedElement) {
+          threatsBlockedElement.textContent = response.threatsBlocked || 0;
+        }
+        
+        // Update the urlsAllowed counter
+        const urlsAllowedElement = document.getElementById('urlsAllowed');
+        if (urlsAllowedElement) {
+          urlsAllowedElement.textContent = response.urlsAllowed || 0;
+        }
+        
+        // Update the urlsChecked counter
+        const urlsCheckedElement = document.getElementById('urlsChecked');
+        if (urlsCheckedElement) {
+          urlsCheckedElement.textContent = response.urlsChecked || 0;
+        }
+      } else {
+        console.error('No response received from background script for stats update');
       }
     });
-  } catch (error) {
-    handleError('Error updating status.');
   }
-}
 
-// Send message with retry
-async function sendMessageWithRetry(message, maxRetries = 3) {
-  for (let i = 0; i < maxRetries; i++) {
+  // Settings toggle handlers
+  const toggles = {
+    warningsToggle: 'showWarnings',
+    blockToggle: 'blockHighRisk',
+    enableSafeBrowsing: 'safeBrowsing',
+    keepHistory: 'keepHistory'
+  };
+
+  // Initialize enable toggle separately since it's in the header
+  enableToggle.addEventListener('change', async (e) => {
     try {
-      const response = await chrome.runtime.sendMessage(message);
-      return response;
+      const { settings: currentSettings } = await chrome.storage.local.get('settings');
+      const newSettings = { 
+        ...currentSettings, 
+        enabled: e.target.checked 
+      };
+      
+      // Update storage
+      await chrome.storage.local.set({ settings: newSettings });
+      
+      // Update UI
+      updateStatsVisibility(e.target.checked);
+      
+      // Notify background script
+      chrome.runtime.sendMessage({
+        type: 'UPDATE_SETTINGS',
+        settings: newSettings
+      });
     } catch (error) {
-      if (i === maxRetries - 1) {
-        throw error;
-      }
-      // Wait before retrying
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.error('Error updating enabled state:', error);
+      // Revert toggle if there was an error
+      e.target.checked = !e.target.checked;
     }
+  });
+
+  // Initialize other toggles
+  Object.entries(toggles).forEach(([elementId, settingKey]) => {
+    const toggle = document.getElementById(elementId);
+    toggle.addEventListener('change', async (e) => {
+      try {
+        const { settings: currentSettings } = await chrome.storage.local.get('settings');
+        const newSettings = { 
+          ...currentSettings, 
+          [settingKey]: e.target.checked 
+        };
+        
+        // Update storage
+        await chrome.storage.local.set({ settings: newSettings });
+        
+        // Notify background script
+        chrome.runtime.sendMessage({
+          type: 'UPDATE_SETTINGS',
+          settings: newSettings
+        });
+      } catch (error) {
+        console.error(`Error updating ${settingKey}:`, error);
+        // Revert toggle if there was an error
+        e.target.checked = !e.target.checked;
+      }
+    });
+  });
+
+  // Settings panel functionality
+  function expandSettings() {
+    settingsTab.classList.add('active');
+    document.body.classList.add('settings-open');
+  }
+
+  function collapseSettings() {
+    settingsTab.classList.remove('active');
+    document.body.classList.remove('settings-open');
+  }
+
+  settingsButton.addEventListener('click', expandSettings);
+  closeSettings.addEventListener('click', collapseSettings);
+
+  // Theme toggle
+  const themeToggle = document.getElementById('themeToggle');
+  themeToggle.addEventListener('click', async () => {
+    const currentTheme = body.getAttribute('data-theme');
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    
+    const newSettings = { ...settings, theme: newTheme };
+    await chrome.storage.local.set({ settings: newSettings });
+    setTheme(newTheme);
+  });
+
+  // Listen for system theme changes
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+    if (settings.theme === 'system') {
+      setTheme(e.matches ? 'dark' : 'light');
+    }
+  });
+
+  // Initial stats update
+  updateStats();
+
+  // Update stats when storage changes
+  chrome.storage.onChanged.addListener((changes) => {
+    if (changes.settings || changes.stats) {
+      updateStats();
+      
+      // Update UI based on enabled state if it changed
+      if (changes.settings?.newValue?.enabled !== undefined) {
+        const isEnabled = changes.settings.newValue.enabled;
+        enableToggle.checked = isEnabled;
+        updateStatsVisibility(isEnabled);
+      }
+    }
+  });
+});
+
+/**
+ * Set the theme for the extension popup
+ * @param {string} theme - Theme to apply ('light' or 'dark')
+ */
+function setTheme(theme) {
+  document.body.setAttribute('data-theme', theme);
+  
+  // Update theme toggle icon
+  const themeIcon = document.querySelector('#themeToggle .material-icons');
+  if (themeIcon) {
+    themeIcon.textContent = theme === 'dark' ? 'light_mode' : 'dark_mode';
+  }
+  
+  // Update CSS variables for the theme
+  const root = document.documentElement;
+  if (theme === 'dark') {
+    root.style.setProperty('--primary', '#818CF8');
+    root.style.setProperty('--primary-hover', '#6366F1');
+    root.style.setProperty('--danger', '#FB7185');
+    root.style.setProperty('--danger-hover', '#F43F5E');
+    root.style.setProperty('--success', '#34D399');
+    root.style.setProperty('--warning', '#FBBF24');
+    root.style.setProperty('--text-primary', '#F8FAFC');
+    root.style.setProperty('--text-secondary', '#CBD5E1');
+    root.style.setProperty('--bg-primary', '#1E293B');
+    root.style.setProperty('--bg-secondary', '#0F172A');
+    root.style.setProperty('--border', '#334155');
+    root.style.setProperty('--disabled', '#64748B');
+    root.style.setProperty('--card-bg', 'rgba(31, 41, 55, 1)');
+    root.style.setProperty('--shadow-color', 'rgba(0, 0, 0, 0.2)');
+    root.style.setProperty('--blur-bg', 'rgba(17, 24, 39, 1)');
+    root.style.setProperty('--ring-color', 'rgba(99, 102, 241, 0.2)');
+    root.style.setProperty('--bg-hover', '#334155');
+  } else {
+    root.style.setProperty('--primary', '#6366F1');
+    root.style.setProperty('--primary-hover', '#4F46E5');
+    root.style.setProperty('--danger', '#EF4444');
+    root.style.setProperty('--danger-hover', '#DC2626');
+    root.style.setProperty('--success', '#10B981');
+    root.style.setProperty('--warning', '#F59E0B');
+    root.style.setProperty('--text-primary', '#1E293B');
+    root.style.setProperty('--text-secondary', '#64748B');
+    root.style.setProperty('--bg-primary', '#FFFFFF');
+    root.style.setProperty('--bg-secondary', '#F8FAFC');
+    root.style.setProperty('--border', '#E2E8F0');
+    root.style.setProperty('--disabled', '#94A3B8');
+    root.style.setProperty('--card-bg', 'rgba(255, 255, 255, 1)');
+    root.style.setProperty('--shadow-color', 'rgba(0, 0, 0, 0.05)');
+    root.style.setProperty('--blur-bg', 'rgba(255, 255, 255, 1)');
+    root.style.setProperty('--ring-color', 'rgba(99, 102, 241, 0.2)');
+    root.style.setProperty('--bg-hover', '#F1F5F9');
   }
 }
 
-// Handle errors
+/**
+ * Handle errors in the UI
+ * @param {string} message - Error message to display
+ */
 function handleError(message) {
   const errorDiv = document.getElementById('error-message') || createErrorElement();
   errorDiv.textContent = message;
   errorDiv.style.display = 'block';
   
-  // Hide error after 5 seconds
+  // Hide after 5 seconds
   setTimeout(() => {
     errorDiv.style.display = 'none';
   }, 5000);
 }
 
-// Create error element if it doesn't exist
+/**
+ * Create error message element
+ * @returns {HTMLElement} Error element
+ */
 function createErrorElement() {
   const errorDiv = document.createElement('div');
   errorDiv.id = 'error-message';
   errorDiv.style.cssText = `
     position: fixed;
-    top: 10px;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: #f44336;
+    bottom: 16px;
+    left: 16px;
+    right: 16px;
+    background: var(--danger);
     color: white;
-    padding: 10px 20px;
-    border-radius: 4px;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 14px;
     z-index: 1000;
     display: none;
-    text-align: center;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   `;
   document.body.appendChild(errorDiv);
   return errorDiv;
 }
-
-// Update stats display
-function updateStats() {
-  try {
-    const threatsElement = document.getElementById('threats-blocked');
-    const urlsElement = document.getElementById('urls-checked');
-    
-    if (threatsElement) threatsElement.textContent = stats.threatsBlocked;
-    if (urlsElement) urlsElement.textContent = stats.urlsChecked;
-  } catch (error) {
-    handleError('Error updating stats.');
-  }
-}
-
-// Load and display URL history
-async function loadHistory() {
-  try {
-    const result = await chrome.storage.local.get(['urlHistory']);
-    const historyList = document.getElementById('history-list');
-    if (!historyList) return;
-
-    historyList.innerHTML = '';
-
-    if (result.urlHistory && result.urlHistory.length > 0) {
-      result.urlHistory.forEach(item => {
-        const historyItem = document.createElement('div');
-        historyItem.className = 'history-item';
-        historyItem.innerHTML = `
-          <div class="url">${item.url}</div>
-          <span class="status ${item.safe ? 'status-safe' : 'status-unsafe'}">
-            ${item.safe ? 'Safe' : 'Blocked'}
-          </span>
-          <div class="timestamp">${new Date(item.timestamp).toLocaleString()}</div>
-        `;
-        historyList.appendChild(historyItem);
-      });
-    } else {
-      historyList.innerHTML = '<div class="history-item">No history available</div>';
-    }
-  } catch (error) {
-    handleError('Error loading history.');
-  }
-}
-
-// Handle tab switching
-function setupTabs() {
-  try {
-    const tabs = document.querySelectorAll('.tab');
-    const contents = document.querySelectorAll('.tab-content');
-
-    tabs.forEach(tab => {
-      tab.addEventListener('click', () => {
-        tabs.forEach(t => t.classList.remove('active'));
-        contents.forEach(c => c.classList.remove('active'));
-
-        tab.classList.add('active');
-        const contentId = tab.getAttribute('data-tab');
-        const content = document.getElementById(contentId);
-        if (content) {
-          content.classList.add('active');
-          if (contentId === 'history') {
-            loadHistory();
-          }
-        }
-      });
-    });
-  } catch (error) {
-    handleError('Error setting up tabs.');
-  }
-}
-
-// Update extension icon
-async function updateExtensionIcon(isEnabled) {
-  try {
-    const iconPath = isEnabled ? {
-      16: "icons/icon16.png",
-      48: "icons/icon48.png",
-      128: "icons/icon128.png"
-    } : {
-      16: "icons/icon16_disabled.png",
-      48: "icons/icon48_disabled.png",
-      128: "icons/icon128_disabled.png"
-    };
-
-    await chrome.action.setIcon({ path: iconPath });
-  } catch (error) {
-    handleError('Error updating extension icon.');
-  }
-}
-
-// Initialize popup
-document.addEventListener('DOMContentLoaded', async () => {
-  try {
-    // Initialize UI elements
-    const enableToggle = document.getElementById('enableToggle');
-    const urlsCheckedElement = document.getElementById('urls-checked');
-    const threatsBlockedElement = document.getElementById('threats-blocked');
-    const historyList = document.getElementById('history-list');
-
-    // Load initial state
-    const { protectionEnabled } = await chrome.storage.local.get('protectionEnabled');
-    enableToggle.checked = protectionEnabled;
-
-    // Update stats display
-    async function updateStats() {
-      const response = await chrome.runtime.sendMessage({ type: 'GET_STATS' });
-      if (response && response.success) {
-        urlsCheckedElement.textContent = response.stats.totalAnalyzed || 0;
-        threatsBlockedElement.textContent = response.stats.totalWarnings || 0;
-      }
-    }
-
-    // Update history display
-    async function updateHistory() {
-      try {
-        const response = await chrome.runtime.sendMessage({ type: 'GET_HISTORY' });
-        if (!response || !response.success) {
-          historyList.innerHTML = '<div class="history-item">No recent activity</div>';
-          return;
-        }
-
-        const history = response.history || [];
-        if (history.length === 0) {
-          historyList.innerHTML = '<div class="history-item">No recent activity</div>';
-          return;
-        }
-
-        historyList.innerHTML = history
-          .slice(0, 5)
-          .map(entry => {
-            const url = truncateUrl(entry.url);
-            const date = new Date(entry.timestamp).toLocaleString();
-            const isSafe = entry.analysis.safe;
-            const isOverriddenInSession = entry.overriddenInSession;
-            
-            let statusClass = isSafe ? 'status-safe' : 'status-unsafe';
-            let statusText = isSafe ? 'Safe' : 'Warning';
-            let statusIcon = isSafe ? '&check;' : '&#9888;';
-            
-            // If URL is overridden in current session, show override status
-            if (isOverriddenInSession) {
-              statusClass = 'status-override';
-              statusText = 'Allowed';
-              statusIcon = '&rarr;';
-            }
-            
-            return `
-              <div class="history-item">
-                <div class="history-url" title="${entry.url}">${url}</div>
-                <div class="history-status ${statusClass}">
-                  <span class="status-icon" aria-hidden="true">${statusIcon}</span>
-                  <span class="status-text">${statusText}</span>
-                </div>
-                <div class="history-time">${date}</div>
-              </div>
-            `;
-          })
-          .join('');
-
-        // Add styles for status elements
-        const style = document.createElement('style');
-        style.textContent = `
-          .history-status {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 13px;
-            font-weight: 600;
-            padding: 4px 8px;
-            border-radius: 4px;
-            margin: 2px 0;
-            white-space: nowrap;
-          }
-          .status-icon {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 16px;
-            height: 16px;
-            font-size: 14px;
-            line-height: 1;
-          }
-          .status-text {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            line-height: 1;
-            font-weight: 600;
-            letter-spacing: -0.01em;
-          }
-          .status-safe {
-            color: #00C851;
-            background-color: rgba(0, 200, 81, 0.1);
-          }
-          .status-unsafe {
-            color: #ff4444;
-            background-color: rgba(255, 68, 68, 0.1);
-          }
-          .status-override {
-            color: #2196F3;
-            background-color: rgba(33, 150, 243, 0.1);
-          }
-          .history-url {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            color: #333;
-            font-size: 13px;
-            font-weight: 500;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            max-width: 280px;
-          }
-          .history-time {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            color: #666;
-            font-size: 12px;
-          }
-        `;
-        document.head.appendChild(style);
-      } catch (error) {
-        console.error('Error updating history:', error);
-        historyList.innerHTML = '<div class="history-item">Error loading history</div>';
-      }
-    }
-
-    // Helper function to truncate URLs
-    function truncateUrl(url) {
-      try {
-        const urlObj = new URL(url);
-        const domain = urlObj.hostname;
-        const path = urlObj.pathname;
-        if (domain.length + path.length > 40) {
-          return domain + path.substring(0, Math.max(0, 37 - domain.length)) + '...';
-        }
-        return domain + path;
-      } catch (e) {
-        return url.length > 40 ? url.substring(0, 37) + '...' : url;
-      }
-    }
-
-    // Handle enable/disable toggle
-    enableToggle.addEventListener('change', async () => {
-      const newState = enableToggle.checked;
-      try {
-        await chrome.storage.local.set({ protectionEnabled: newState });
-        await chrome.runtime.sendMessage({
-          type: 'SETTINGS_UPDATED',
-          settings: { enableProtection: newState }
-        });
-      } catch (error) {
-        console.error('Error updating protection state:', error);
-        enableToggle.checked = !newState; // Revert on error
-      }
-    });
-
-    // Initial update
-    await updateStats();
-    await updateHistory();
-
-    // Periodic updates
-    setInterval(async () => {
-      await updateStats();
-      await updateHistory();
-    }, 2000); // Update every 2 seconds
-
-  } catch (error) {
-    console.error('Error initializing popup:', error);
-  }
-});
-
-// Update status every minute
-setInterval(updateStatus, 60000); 
