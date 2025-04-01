@@ -17,4 +17,6 @@ node_modules/
 dist/
 build/
 tmp/
-temp/ 
+temp/
+backup/
+.DS_Store 
