@@ -78,6 +78,13 @@ function extractDomain(url) {
 
 // Handle messages from popup and content script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    // Ensure we have a valid message type
+    if (!message || !message.type) {
+        console.warn('Invalid message received:', message);
+        sendResponse({ error: 'Invalid message format' });
+        return true;
+    }
+
     // Processing message: message.type
     
     if (message.type === 'ANALYZE_URL') {
@@ -122,32 +129,59 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
     
     if (message.type === 'GET_STATS') {
-        chrome.storage.local.get('stats', (result) => {
-            sendResponse(result.stats || {
-                threatsBlocked: 0,
-                urlsAllowed: 0,
-                urlsChecked: 0
+        try {
+            chrome.storage.local.get('stats', (result) => {
+                if (chrome.runtime.lastError) {
+                    console.warn('Storage error:', chrome.runtime.lastError);
+                    sendResponse({ error: 'Failed to retrieve stats' });
+                    return;
+                }
+                sendResponse(result.stats || {
+                    threatsBlocked: 0,
+                    urlsAllowed: 0,
+                    urlsChecked: 0
+                });
             });
-        });
+        } catch (error) {
+            console.warn('Error handling GET_STATS:', error);
+            sendResponse({ error: 'Internal error processing stats' });
+        }
         return true;
     }
     
     if (message.type === 'UPDATE_SETTINGS') {
-        chrome.storage.local.get('settings', (result) => {
-            const currentSettings = result.settings || {};
-            const newSettings = { ...currentSettings, ...message.settings };
-            
-            if (typeof newSettings.enabled !== 'boolean') {
-                newSettings.enabled = true;
-            }
-            
-            chrome.storage.local.set({ settings: newSettings }, () => {
-                chrome.action.setBadgeText({
-                    text: newSettings.enabled ? (result.stats?.threatsBlocked || '0').toString() : ''
+        try {
+            chrome.storage.local.get('settings', (result) => {
+                if (chrome.runtime.lastError) {
+                    console.warn('Storage error:', chrome.runtime.lastError);
+                    sendResponse({ error: 'Failed to update settings' });
+                    return;
+                }
+
+                const currentSettings = result.settings || {};
+                const newSettings = { ...currentSettings, ...message.settings };
+                
+                if (typeof newSettings.enabled !== 'boolean') {
+                    newSettings.enabled = true;
+                }
+                
+                chrome.storage.local.set({ settings: newSettings }, () => {
+                    if (chrome.runtime.lastError) {
+                        console.warn('Storage error:', chrome.runtime.lastError);
+                        sendResponse({ error: 'Failed to save settings' });
+                        return;
+                    }
+
+                    chrome.action.setBadgeText({
+                        text: newSettings.enabled ? (result.stats?.threatsBlocked || '0').toString() : ''
+                    });
+                    sendResponse({ success: true });
                 });
-                if (sendResponse) sendResponse({ success: true });
             });
-        });
+        } catch (error) {
+            console.warn('Error handling UPDATE_SETTINGS:', error);
+            sendResponse({ error: 'Internal error updating settings' });
+        }
         return true;
     }
 
@@ -183,6 +217,60 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             });
             if (sendResponse) sendResponse({ success: true });
         });
+        return true;
+    }
+
+    if (message.type === 'CHECK_SITE_SECURITY') {
+        try {
+            const url = message.url;
+            const domain = extractDomain(url);
+            const analysis = analyzeURL(url);
+            
+            // Prepare response
+            const response = {
+                malware: {
+                    detected: false,
+                    message: 'No malware detected'
+                },
+                phishing: {
+                    detected: false,
+                    message: 'No phishing indicators found'
+                }
+            };
+
+            // Check for malware indicators
+            if (analysis.risk === 'high') {
+                response.malware.detected = true;
+                response.malware.message = 'Potential security threat detected';
+            }
+
+            // Check for phishing indicators
+            const phishingIndicators = [
+                'login', 'signin', 'account', 'password', 'secure', 'banking'
+            ];
+            
+            const urlLower = url.toLowerCase();
+            const hasPhishingTerms = phishingIndicators.some(term => urlLower.includes(term));
+            
+            if (hasPhishingTerms && analysis.risk !== 'low') {
+                response.phishing.detected = true;
+                response.phishing.message = 'Potential phishing attempt detected';
+            }
+
+            sendResponse(response);
+        } catch (error) {
+            console.error('Error in CHECK_SITE_SECURITY handler:', error);
+            sendResponse({
+                malware: {
+                    detected: false,
+                    message: 'Error checking for malware'
+                },
+                phishing: {
+                    detected: false,
+                    message: 'Error checking for phishing'
+                }
+            });
+        }
         return true;
     }
 });

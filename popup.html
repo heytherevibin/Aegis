@@ -594,6 +594,73 @@
             background: rgba(245, 158, 11, 0.1);
             border-color: rgba(245, 158, 11, 0.2);
         }
+
+        /* Quick Site Check styles */
+        .quick-check {
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .quick-check-button {
+            width: 100%;
+            padding: 12px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .quick-check-button:hover {
+            background: var(--primary-hover);
+        }
+
+        .quick-check-button:disabled {
+            background: var(--disabled);
+            cursor: not-allowed;
+        }
+
+        .security-results {
+            margin-top: 16px;
+            padding: 12px;
+            border-radius: 8px;
+            background: var(--bg-secondary);
+            display: none;
+        }
+
+        .security-results.visible {
+            display: block;
+        }
+
+        .result-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+        }
+
+        .result-item .material-icons {
+            font-size: 16px;
+        }
+
+        .result-item.safe {
+            color: var(--success);
+        }
+
+        .result-item.warning {
+            color: var(--warning);
+        }
+
+        .result-item.danger {
+            color: var(--danger);
+        }
     </style>
 </head>
 <body data-theme="light">
@@ -613,6 +680,37 @@
             <button id="themeToggle" class="icon-button" aria-label="Toggle theme">
                 <span class="material-icons">dark_mode</span>
             </button>
+        </div>
+    </div>
+
+    <!-- Quick Site Check Section -->
+    <div class="quick-check">
+        <button id="quickCheckButton" class="quick-check-button">
+            <span class="material-icons">security</span>
+            Check Current Site
+        </button>
+        
+        <div id="securityResults" class="security-results">
+            <div id="checkingStatus" class="result-item">
+                <span class="material-icons">hourglass_empty</span>
+                Checking site security...
+            </div>
+            <div id="httpsStatus" class="result-item">
+                <span class="material-icons">lock</span>
+                <span>HTTPS Connection</span>
+            </div>
+            <div id="domainStatus" class="result-item">
+                <span class="material-icons">domain</span>
+                <span>Domain Analysis</span>
+            </div>
+            <div id="malwareStatus" class="result-item">
+                <span class="material-icons">virus_delete</span>
+                <span>Malware Check</span>
+            </div>
+            <div id="phishingStatus" class="result-item">
+                <span class="material-icons">phishing</span>
+                <span>Phishing Detection</span>
+            </div>
         </div>
     </div>
 

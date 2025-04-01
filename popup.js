@@ -42,15 +42,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Initialize settings
   const { settings = defaultSettings } = await chrome.storage.local.get('settings');
   
-  // Initialize all toggles
-  enableToggle.checked = settings.enabled;
-  warningsToggle.checked = settings.showWarnings;
-  blockToggle.checked = settings.blockHighRisk;
-  safeBrowsingToggle.checked = settings.safeBrowsing;
-  keepHistoryToggle.checked = settings.keepHistory;
+  // Initialize all toggles with null checks
+  if (enableToggle) enableToggle.checked = settings.enabled;
+  if (warningsToggle) warningsToggle.checked = settings.showWarnings;
+  if (blockToggle) blockToggle.checked = settings.blockHighRisk;
+  if (safeBrowsingToggle) safeBrowsingToggle.checked = settings.safeBrowsing;
+  if (keepHistoryToggle) keepHistoryToggle.checked = settings.keepHistory;
 
-  // Initialize stats visibility
-  updateStatsVisibility(settings.enabled);
+  // Initialize stats visibility if container exists
+  if (statsContainer) {
+    updateStatsVisibility(settings.enabled);
+  }
 
   // Initialize theme
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -73,29 +75,36 @@ document.addEventListener('DOMContentLoaded', async () => {
    * Update stats display with latest values from background script
    */
   function updateStats() {
-    chrome.runtime.sendMessage({type: 'GET_STATS'}, (response) => {
-      if (response) {
-        // Update the threatsBlocked counter
-        const threatsBlockedElement = document.getElementById('threatsBlocked');
-        if (threatsBlockedElement) {
-          threatsBlockedElement.textContent = response.threatsBlocked || 0;
+    try {
+      chrome.runtime.sendMessage({type: 'GET_STATS'}, (response) => {
+        if (chrome.runtime.lastError) {
+          console.warn('Connection error:', chrome.runtime.lastError.message);
+          return;
         }
         
-        // Update the urlsAllowed counter
-        const urlsAllowedElement = document.getElementById('urlsAllowed');
-        if (urlsAllowedElement) {
-          urlsAllowedElement.textContent = response.urlsAllowed || 0;
+        if (response) {
+          // Update the threatsBlocked counter
+          const threatsBlockedElement = document.getElementById('threatsBlocked');
+          if (threatsBlockedElement) {
+            threatsBlockedElement.textContent = response.threatsBlocked || 0;
+          }
+          
+          // Update the urlsAllowed counter
+          const urlsAllowedElement = document.getElementById('urlsAllowed');
+          if (urlsAllowedElement) {
+            urlsAllowedElement.textContent = response.urlsAllowed || 0;
+          }
+          
+          // Update the urlsChecked counter
+          const urlsCheckedElement = document.getElementById('urlsChecked');
+          if (urlsCheckedElement) {
+            urlsCheckedElement.textContent = response.urlsChecked || 0;
+          }
         }
-        
-        // Update the urlsChecked counter
-        const urlsCheckedElement = document.getElementById('urlsChecked');
-        if (urlsCheckedElement) {
-          urlsCheckedElement.textContent = response.urlsChecked || 0;
-        }
-      } else {
-        console.error('No response received from background script for stats update');
-      }
-    });
+      });
+    } catch (error) {
+      console.warn('Error updating stats:', error);
+    }
   }
 
   // Settings toggle handlers
@@ -194,6 +203,97 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Initial stats update
   updateStats();
+
+  // Quick Site Check functionality
+  const quickCheckButton = document.getElementById('quickCheckButton');
+  const securityResults = document.getElementById('securityResults');
+  const checkingStatus = document.getElementById('checkingStatus');
+  const httpsStatus = document.getElementById('httpsStatus');
+  const domainStatus = document.getElementById('domainStatus');
+  const malwareStatus = document.getElementById('malwareStatus');
+  const phishingStatus = document.getElementById('phishingStatus');
+
+  async function getCurrentTab() {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    return tab;
+  }
+
+  function updateResultItem(element, status, message, icon) {
+    element.className = `result-item ${status}`;
+    element.innerHTML = `
+      <span class="material-icons">${icon}</span>
+      <span>${message}</span>
+    `;
+  }
+
+  async function checkSiteSecurity() {
+    try {
+      // Disable button and show results panel
+      quickCheckButton.disabled = true;
+      securityResults.classList.add('visible');
+      
+      // Get current tab
+      const tab = await getCurrentTab();
+      const url = new URL(tab.url);
+
+      // Check HTTPS
+      const isHttps = url.protocol === 'https:';
+      updateResultItem(
+        httpsStatus,
+        isHttps ? 'safe' : 'danger',
+        isHttps ? 'Secure HTTPS Connection' : 'Insecure Connection',
+        isHttps ? 'lock' : 'lock_open'
+      );
+
+      // Check domain
+      const domainParts = url.hostname.split('.');
+      const isSuspiciousDomain = domainParts.length > 3 || url.hostname.includes('--');
+      updateResultItem(
+        domainStatus,
+        isSuspiciousDomain ? 'warning' : 'safe',
+        isSuspiciousDomain ? 'Suspicious Domain Structure' : 'Domain Looks Safe',
+        isSuspiciousDomain ? 'warning' : 'check_circle'
+      );
+
+      // Request security check from background script
+      chrome.runtime.sendMessage(
+        { type: 'CHECK_SITE_SECURITY', url: tab.url },
+        (response) => {
+          if (response.malware) {
+            updateResultItem(
+              malwareStatus,
+              response.malware.detected ? 'danger' : 'safe',
+              response.malware.message,
+              response.malware.detected ? 'dangerous' : 'check_circle'
+            );
+          }
+
+          if (response.phishing) {
+            updateResultItem(
+              phishingStatus,
+              response.phishing.detected ? 'danger' : 'safe',
+              response.phishing.message,
+              response.phishing.detected ? 'gpp_bad' : 'check_circle'
+            );
+          }
+
+          // Remove checking status and re-enable button
+          checkingStatus.style.display = 'none';
+          quickCheckButton.disabled = false;
+        }
+      );
+    } catch (error) {
+      console.error('Error during security check:', error);
+      checkingStatus.className = 'result-item danger';
+      checkingStatus.innerHTML = `
+        <span class="material-icons">error</span>
+        <span>Error checking site security</span>
+      `;
+      quickCheckButton.disabled = false;
+    }
+  }
+
+  quickCheckButton.addEventListener('click', checkSiteSecurity);
 
   // Update stats when storage changes
   chrome.storage.onChanged.addListener((changes) => {
