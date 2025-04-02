@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Security Warning - Aegis</title>
+  <style>
+    :root {
+      --background: 0 0% 100%;
+      --foreground: 240 10% 3.9%;
+      --card: 0 0% 100%;
+      --card-foreground: 240 10% 3.9%;
+      --popover: 0 0% 100%;
+      --popover-foreground: 240 10% 3.9%;
+      --primary: 346.8 77.2% 49.8%;
+      --primary-foreground: 355.7 100% 97.3%;
+      --secondary: 240 4.8% 95.9%;
+      --secondary-foreground: 240 5.9% 10%;
+      --muted: 240 4.8% 95.9%;
+      --muted-foreground: 240 3.8% 46.1%;
+      --accent: 240 4.8% 95.9%;
+      --accent-foreground: 240 5.9% 10%;
+      --destructive: 0 84.2% 60.2%;
+      --destructive-foreground: 0 0% 98%;
+      --border: 240 5.9% 90%;
+      --input: 240 5.9% 90%;
+      --ring: 346.8 77.2% 49.8%;
+      --radius: 0.5rem;
+    }
+
+    .dark {
+      --background: 20 14.3% 4.1%;
+      --foreground: 0 0% 95%;
+      --card: 24 9.8% 10%;
+      --card-foreground: 0 0% 95%;
+      --popover: 0 0% 9%;
+      --popover-foreground: 0 0% 95%;
+      --primary: 346.8 77.2% 49.8%;
+      --primary-foreground: 355.7 100% 97.3%;
+      --secondary: 240 3.7% 15.9%;
+      --secondary-foreground: 0 0% 98%;
+      --muted: 0 0% 15%;
+      --muted-foreground: 240 5% 64.9%;
+      --accent: 12 6.5% 15.1%;
+      --accent-foreground: 0 0% 98%;
+      --destructive: 0 62.8% 30.6%;
+      --destructive-foreground: 0 85.7% 97.3%;
+      --border: 240 3.7% 15.9%;
+      --input: 240 3.7% 15.9%;
+      --ring: 346.8 77.2% 49.8%;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: hsl(var(--background));
+      color: hsl(var(--foreground));
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    .warning-container {
+      background-color: hsl(var(--card));
+      border: 1px solid hsl(var(--border));
+      border-radius: var(--radius);
+      padding: 2rem;
+      max-width: 32rem;
+      width: 100%;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+
+    .warning-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .warning-icon {
+      color: hsl(var(--destructive));
+      width: 2.5rem;
+      height: 2.5rem;
+    }
+
+    .warning-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: hsl(var(--destructive));
+    }
+
+    .warning-content {
+      margin-bottom: 2rem;
+    }
+
+    .warning-url {
+      background-color: hsl(var(--secondary));
+      padding: 1rem;
+      border-radius: var(--radius);
+      margin: 1rem 0;
+      word-break: break-all;
+      font-family: monospace;
+      font-size: 0.875rem;
+    }
+
+    .warning-reasons {
+      margin: 1.5rem 0;
+    }
+
+    .warning-reasons h3 {
+      color: hsl(var(--muted-foreground));
+      font-size: 0.875rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .warning-reasons ul {
+      list-style: none;
+    }
+
+    .warning-reasons li {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: hsl(var(--foreground));
+      margin-bottom: 0.5rem;
+    }
+
+    .warning-reasons li::before {
+      content: "•";
+      color: hsl(var(--destructive));
+    }
+
+    .risk-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+
+    .warning-actions {
+      display: flex;
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+
+    .button {
+      flex: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.75rem 1.5rem;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 150ms;
+      border: none;
+    }
+
+    .button-secondary {
+      background-color: hsl(var(--secondary));
+      color: hsl(var(--secondary-foreground));
+    }
+
+    .button-secondary:hover {
+      background-color: hsl(var(--secondary) / 0.8);
+    }
+
+    .button-destructive {
+      background-color: hsl(var(--destructive));
+      color: hsl(var(--destructive-foreground));
+    }
+
+    .button-destructive:hover {
+      background-color: hsl(var(--destructive) / 0.9);
+    }
+  </style>
+</head>
+<body>
+  <div class="warning-container">
+    <div class="warning-header">
+      <svg class="warning-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+        <line x1="12" y1="9" x2="12" y2="13"/>
+        <line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+      <h1 class="warning-title">Security Warning</h1>
+    </div>
+
+    <div class="warning-content">
+      <p>This website has been flagged as potentially dangerous by Aegis Security.</p>
+      
+      <div class="warning-url" id="blockedUrl">
+        <!-- URL will be inserted here -->
+      </div>
+
+      <div class="warning-reasons">
+        <h3>Detected Threats:</h3>
+        <ul id="threatsList">
+          <!-- Threats will be inserted here -->
+        </ul>
+      </div>
+
+      <div class="warning-risk">
+        <h3>Risk Level:</h3>
+        <div id="riskLevel" class="mt-2">
+          <!-- Risk level will be inserted here -->
+        </div>
+      </div>
+
+      <div class="warning-recommendation">
+        <p><strong>Recommendation:</strong> We strongly advise against proceeding to this website. It has been identified as potentially harmful to your security.</p>
+      </div>
+    </div>
+
+    <div class="warning-actions">
+      <button class="button button-secondary" id="goBackButton">
+        Go Back (Recommended)
+      </button>
+      <button class="button button-destructive" id="proceedButton">
+        Proceed at Own Risk
+      </button>
+    </div>
+  </div>
+
+  <script src="warning.js"></script>
+</body>
+</html> 

@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Aegis",
-  "version": "1.0.0",
-  "description": "A powerful security extension for safer browsing",
+  "name": "Aegis Security",
+  "version": "1.0",
+  "description": "Advanced security and threat detection for safer browsing",
   "author": "Vibin Mathew",
   "homepage_url": "https://github.com/heytherevibin/aegis",
   "icons": {
@@ -22,8 +22,11 @@
   "permissions": [
     "storage",
     "activeTab",
-    "tabs",
-    "webNavigation"
+    "webRequest",
+    "webNavigation",
+    "scripting",
+    "history",
+    "tabs"
   ],
   "host_permissions": [
     "<all_urls>"
@@ -41,11 +44,15 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["icons/*"],
+      "resources": [
+        "icons/*",
+        "styles/*",
+        "fonts/*"
+      ],
       "matches": ["<all_urls>"]
     }
   ],
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com"
+    "extension_pages": "script-src 'self'; object-src 'self'"
   }
 } 
